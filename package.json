@@ -1,0 +1,54 @@
+{
+  "name": "homey-interval-manager",
+  "version": "1.0.0",
+  "description": "A utility class for managing intervals in Homey apps",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abn/homey-interval-manager.git"
+  },
+  "keywords": [
+    "homey",
+    "setInterval",
+    "clearInterval",
+    "interval",
+    "utility",
+    "manager"
+  ],
+  "author": "Arun Babu Neelicattu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/abn/homey-interval-manager/issues"
+  },
+  "main": "dist/homey-interval-manager.js",
+  "types": "dist/homey-interval-manager.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "npm run lint:fix && npm run format && npm run docs",
+    "test": "jest",
+    "docs": "npx typedoc"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/node": "^22.7.8",
+    "@types/homey": "npm:homey-apps-sdk-v3-types@^0.3.9",
+    "@types/jest": "^29.5.13",
+    "@typescript-eslint/eslint-plugin": "^8.11.0",
+    "@typescript-eslint/parser": "^8.11.0",
+    "eslint": "^9.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "globals": "^15.11.0",
+    "jest": "^29.7.0",
+    "jest-mock-extended": "^4.0.0-beta1",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typedoc": "^0.26.10",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.11.0"
+  }
+}
