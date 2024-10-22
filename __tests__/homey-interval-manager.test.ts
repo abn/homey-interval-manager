@@ -2,7 +2,7 @@ import type { Device } from "homey";
 
 import { mock, MockProxy } from "jest-mock-extended";
 
-import HomeyIntervalManager, { IntervalConfigurationCollection } from "../src/homey-interval-manager";
+import { HomeyIntervalManager, IntervalConfigurationCollection } from "../src/homey-interval-manager";
 
 jest.useFakeTimers();
 jest.spyOn(global, "setInterval");

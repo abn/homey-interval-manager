@@ -1,6 +1,6 @@
 /** @type {Partial<import('typedoc').TypeDocOptions>} */
 const config = {
-    entryPoints: ["./src/homey-interval-manager.ts"],
+    entryPoints: ["./src/*"],
     out: "docs",
 };
 

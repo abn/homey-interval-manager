@@ -41,7 +41,7 @@ type DeviceSettings = Record<string, DeviceSettingsValue>;
  *
  * @template T - Extends from [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html).
  */
-export default class HomeyIntervalManager<T extends Device> {
+export class HomeyIntervalManager<T extends Device> {
     private managedIntervalIds: Record<string, NodeJS.Timeout | null> = {};
     private readonly device: T;
     private readonly intervalConfigs: IntervalConfigurationCollection<T>;
