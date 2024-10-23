@@ -1,0 +1,103 @@
+name: Main Workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  merge_group:
+
+jobs:
+  lint-checks:
+    name: Lint Check
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup
+
+      - name: Run Lint
+        shell: bash
+        run: pnpm lint
+
+      - name: Run format checks
+        shell: bash
+        run: pnpm format:check
+
+  build-checks:
+    name: Build Check
+    needs:
+      - lint-checks
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup
+
+      - name: Build distribution
+        shell: bash
+        run: pnpm build
+
+      - name: Build package
+        shell: bash
+        run: npm pack
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-tarball
+          path: |
+            homey-interval-manager-*.tgz
+
+    docs-check:
+      name: Doc Generation Check
+      needs:
+        - lint-checks
+
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+
+        - name: Setup build environment
+          uses: ./.github/actions/setup
+
+        - name: Generate documentation
+          shell: bash
+          run: npm run docs
+
+        - name: Upload documentation
+          uses: actions/upload-pages-artifact@v3
+          if: "${{ github.ref != 'refs/heads/main' }}"
+          with:
+            path: 'docs/**'
+
+    tests:
+      name: Run Tests
+      needs:
+        - lint-checks
+        - build-checks
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+
+        - name: Setup build environment
+          uses: ./.github/actions/setup
+
+        - name: Build distribution
+          shell: bash
+          run: pnpm test
