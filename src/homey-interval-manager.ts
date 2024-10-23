@@ -21,6 +21,8 @@ export interface IntervalConfiguration<T extends Device> {
     disableAutoStart?: boolean;
 }
 
+type ValueOf<T> = T[keyof T];
+
 /**
  * Type definition for a collection of interval configurations, mapped by unique string keys.
  * Each entry in the collection is an {@link IntervalConfiguration} associated with a specific device type.
@@ -132,15 +134,15 @@ export class HomeyIntervalManager<T extends Device> {
     }
 
     /**
-     * Stops all managed intervals by clearing each one.
+     * Stops the intervals associated with the provided keys. If no keys are provided, all managed intervals are
+     * cleared.
      *
-     * Iterates over all interval IDs managed by the instance,
-     * and clears each interval using the clearInterval method.
-     *
-     * @return {Promise<void>} A promise that resolves when all intervals have been cleared.
+     * @param {...string} keys - The keys for intervals that need to be stopped. If no keys are provided, all managed
+     *  intervals will be stopped.
+     * @return {Promise<void>} A promise that resolves when the intervals have been cleared.
      */
-    public async stop(): Promise<void> {
-        for (const key of Object.keys(this.managedIntervalIds)) {
+    public async stop(...keys: string[]): Promise<void> {
+        for (const key of keys.length === 0 ? Object.keys(this.managedIntervalIds) : keys) {
             await this.clearInterval(key);
         }
     }
@@ -199,30 +201,71 @@ export class HomeyIntervalManager<T extends Device> {
     }
 
     /**
-     * Restarts the service, optionally considering changed settings.
+     * Restarts the services or processes identified by the given keys.
      *
-     * @param {...string} changedSettings - An array of settings that have changed.
-     * @return {Promise<void>} A promise that resolves when the restart operation is complete.
+     * @param {...string} keys - The keys identifying the services or processes to restart.
+     * @return {Promise<void>} - A promise that resolves when the restart operation is complete.
      */
-    public async restart(...changedSettings: string[]): Promise<void> {
-        if (changedSettings.length === 0) {
-            await this.stop();
-            await this.start();
-            return;
-        }
+    public async restart(...keys: string[]): Promise<void> {
+        await this.stop(...keys);
+        await this.start(...keys);
+    }
 
+    /**
+     * Restarts intervals based on a specific configuration key and its values.
+     *
+     * @param {keyof IntervalConfiguration<T>} configKey - The configuration key to match.
+     * @param {...ValueOf<IntervalConfiguration<T>>[]} values - The values to match against the configuration key.
+     * @return {Promise<void>} A promise that resolves when the intervals have been restarted.
+     */
+    private async restartByConfigKey(
+        configKey: keyof IntervalConfiguration<T>,
+        ...values: ValueOf<IntervalConfiguration<T>>[]
+    ): Promise<void> {
         const { intervalConfigs } = this;
         const restartKeys: string[] = [];
 
-        for (const key of Object.keys(intervalConfigs)) {
-            const config = intervalConfigs[key];
+        for (const [key, config] of Object.entries(intervalConfigs)) {
+            const value = config[configKey];
 
-            if (config.settingName && changedSettings.includes(config.settingName)) {
-                await this.clearInterval(key);
+            if (value && values.includes(config[configKey])) {
                 restartKeys.push(key);
             }
         }
 
-        await this.start(...restartKeys);
+        await this.restart(...restartKeys);
+    }
+
+    /**
+     * Restarts intervals that have been configured with the provided setting names. This is useful for use with
+     * [`Device.onSettings`](https://apps-sdk-v3.developer.homey.app/Device.html#onSettings).
+     *
+     * @example
+     * ```ts
+     * async onSettings(event) {
+     *  // ... your normal event handling
+     *
+     *  // trigger this a second later to allow homey to persist the new configurations after this method ends
+     *  this.homey.setTimeout(async () => {
+     *      await this.intervalManager.restartBySettings(...event.changedKeys);
+     *  }, 1000);
+     * }
+     * ```
+     *
+     * @param {...string} settingNames - The names of the settings to restart the system by.
+     * @return {Promise<void>} - A promise that resolves when the restart operation is complete.
+     */
+    public async restartBySettings(...settingNames: string[]): Promise<void> {
+        await this.restartByConfigKey("settingName", ...settingNames);
+    }
+
+    /**
+     * Restarts intervals that have been configured with the provided function names.
+     *
+     * @param {string[]} functionNames - The names of the functions to restart intervals for.
+     * @return {Promise<void>} A promise that resolves when the restart process is complete.
+     */
+    public async restartByFunctionName(...functionNames: string[]): Promise<void> {
+        await this.restartByConfigKey("functionName", ...functionNames);
     }
 }

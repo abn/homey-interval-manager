@@ -1,6 +1,6 @@
 # homey-interval-manager
 
-A lightweight TypeScript library for managing intervals in Homey devices. Simplifies the process of scheduling and 
+A lightweight TypeScript library for managing intervals in Homey devices. Simplifies the process of scheduling and
 managing recurring tasks within your Homey devices.
 
 ## Features
@@ -118,7 +118,6 @@ class SomeCloudApiDevice extends OAuth2Device {
         }, 1000);
     }
 }
-
 ```
 
 ## Contributing
