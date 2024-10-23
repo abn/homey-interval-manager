@@ -33,7 +33,7 @@ jobs:
 
       - name: Generate documentation
         shell: bash
-        run: npm run docs
+        run: pnpm run docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
