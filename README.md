@@ -89,12 +89,17 @@ class SomeCloudApiDevice extends OAuth2Device {
     private intervalManager: HomeyIntervalManager;
 
     async onOAuth2Init() {
-        this.intervalManager = new HomeyIntervalManager(this, {
-            STATUS_UPDATE: {
-                functionName: "syncStatusUpdate",
-                settingName: "status_update_polling_interval",
-            }
-        }, 600, true);
+        this.intervalManager = new HomeyIntervalManager(
+            this,
+            {
+                STATUS_UPDATE: {
+                    functionName: "syncStatusUpdate",
+                    settingName: "status_update_polling_interval",
+                },
+            },
+            600,
+            true,
+        );
         await this.intervalManager.start();
     }
 
@@ -106,17 +111,14 @@ class SomeCloudApiDevice extends OAuth2Device {
         await this.intervalManager.stop();
     }
 
-    async onSettings({
-                         oldSettings,
-                         newSettings,
-                         changedKeys,
-                     }) {
+    async onSettings({ oldSettings, newSettings, changedKeys }) {
         // perform your other tasks
         this.homey.setTimeout(async () => {
             await this.intervalManager.restart(...changedKeys);
         }, 1000);
     }
 }
+
 ```
 
 ## Contributing
