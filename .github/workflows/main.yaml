@@ -58,46 +58,46 @@ jobs:
           path: |
             homey-interval-manager-*.tgz
 
-    docs-check:
-      name: Doc Generation Check
-      needs:
-        - lint-checks
+  docs-check:
+    name: Doc Generation Check
+    needs:
+      - lint-checks
 
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        - name: Setup build environment
-          uses: ./.github/actions/setup
+      - name: Setup build environment
+        uses: ./.github/actions/setup
 
-        - name: Generate documentation
-          shell: bash
-          run: pnpm run docs
+      - name: Generate documentation
+        shell: bash
+        run: pnpm run docs
 
-        - name: Upload documentation
-          uses: actions/upload-pages-artifact@v3
-          if: "${{ github.ref != 'refs/heads/main' }}"
-          with:
-            path: 'docs/**'
+      - name: Upload documentation
+        uses: actions/upload-pages-artifact@v3
+        if: "${{ github.ref != 'refs/heads/main' }}"
+        with:
+          path: "docs/*"
 
-    tests:
-      name: Run Tests
-      needs:
-        - lint-checks
-        - build-checks
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
+  tests:
+    name: Run Tests
+    needs:
+      - lint-checks
+      - build-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        - name: Setup build environment
-          uses: ./.github/actions/setup
+      - name: Setup build environment
+        uses: ./.github/actions/setup
 
-        - name: Build distribution
-          shell: bash
-          run: pnpm test
+      - name: Build distribution
+        shell: bash
+        run: pnpm test
