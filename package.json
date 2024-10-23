@@ -2,6 +2,7 @@
   "name": "homey-interval-manager",
   "version": "1.0.0",
   "description": "A utility class for managing intervals in Homey apps",
+  "homepage": "https://abn.github.io/homey-interval-manager/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/abn/homey-interval-manager.git"
