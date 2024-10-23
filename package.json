@@ -21,6 +21,12 @@
   },
   "main": "dist/homey-interval-manager.js",
   "types": "dist/homey-interval-manager.d.ts",
+  "files": [
+    "dist/*",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "lint": "eslint",
