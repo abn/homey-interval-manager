@@ -261,7 +261,7 @@ describe("HomeyIntervalManager", () => {
         await intervalManager.stop();
     });
 
-    it("should use default when setting value is undefined", async () => {
+    it("should restart correct intervals by setting name", async () => {
         const configs: IntervalConfigurationCollection<MockedDevice> = {
             interval1: { functionName: "mockFunction1", settingName: "setting1" },
             restartSetting: { functionName: "mockFunction2", settingName: "setting2" },
@@ -282,7 +282,38 @@ describe("HomeyIntervalManager", () => {
         expect(device.homey.setInterval).toHaveBeenNthCalledWith(1, expect.any(Function), 10 * 1000);
         expect(device.homey.setInterval).toHaveBeenNthCalledWith(2, expect.any(Function), 20 * 1000);
 
-        await intervalManager.restart("setting2");
+        await intervalManager.restartBySettings("setting2");
+        expect(device.mockFunction1).toHaveBeenCalledTimes(1);
+        expect(device.mockFunction2).toHaveBeenCalledTimes(2);
+        expect(device.homey.clearInterval).toHaveBeenCalledTimes(1);
+        expect(device.homey.setInterval).toHaveBeenCalledTimes(3);
+        expect(device.homey.setInterval).toHaveBeenNthCalledWith(3, expect.any(Function), 20 * 1000);
+
+        await intervalManager.stop();
+    });
+
+    it("should restart correct intervals by function name", async () => {
+        const configs: IntervalConfigurationCollection<MockedDevice> = {
+            interval1: { functionName: "mockFunction1", settingName: "setting1" },
+            restartSetting: { functionName: "mockFunction2", settingName: "setting2" },
+        };
+        const intervalManager = new HomeyIntervalManager<MockedDevice>(device, configs, defaultIntervalSeconds);
+
+        device.getSettings.mockReturnValue({
+            setting1: 10,
+            setting2: 20,
+        });
+
+        await intervalManager.start();
+
+        expect(device.mockFunction1).toHaveBeenCalledTimes(1);
+        expect(device.mockFunction2).toHaveBeenCalledTimes(1);
+
+        expect(device.homey.setInterval).toHaveBeenCalledTimes(2);
+        expect(device.homey.setInterval).toHaveBeenNthCalledWith(1, expect.any(Function), 10 * 1000);
+        expect(device.homey.setInterval).toHaveBeenNthCalledWith(2, expect.any(Function), 20 * 1000);
+
+        await intervalManager.restartByFunctionName("mockFunction2");
         expect(device.mockFunction1).toHaveBeenCalledTimes(1);
         expect(device.mockFunction2).toHaveBeenCalledTimes(2);
         expect(device.homey.clearInterval).toHaveBeenCalledTimes(1);
