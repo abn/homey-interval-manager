@@ -29,11 +29,12 @@
   ],
   "scripts": {
     "build": "tsc",
+    "preinstall": "npx only-allow pnpm",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "npm run lint:fix && npm run format && npm run docs",
+    "prepare": "pnpm run lint:fix && pnpm run format && pnpm run docs",
     "test": "jest",
     "docs": "npx typedoc"
   },
