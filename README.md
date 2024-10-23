@@ -1,7 +1,7 @@
 # homey-interval-manager
 
-A lightweight TypeScript library for managing intervals in Homey apps. Simplifies the process of scheduling and managing
-recurring tasks within your Homey devices.
+A lightweight TypeScript library for managing intervals in Homey devices. Simplifies the process of scheduling and 
+managing recurring tasks within your Homey devices.
 
 ## Features
 
@@ -33,7 +33,7 @@ import HomeyIntervalManager from "homey-interval-manager";
 ```typescript
 // In your device class constructor:
 this.intervalManager = new HomeyIntervalManager(this, {
-    myInterval: {
+    SOME_KEY: {
         functionName: "myFunction", // Name of the function to execute
         settingName: "mySetting", // Optional setting to watch for changes
         intervalSeconds: 300, // Optional interval in seconds (default: 600)
@@ -52,7 +52,7 @@ this.intervalManager = new HomeyIntervalManager(this, {
 await this.intervalManager.start();
 
 // Or start specific intervals
-await this.intervalManager.start("myInterval", "anotherInterval");
+await this.intervalManager.start("SOME_KEY", "SOME_OTHER_KEY");
 ```
 
 4. **Stop the intervals:**
@@ -82,33 +82,39 @@ await this.intervalManager.restart("mySetting", "anotherSetting");
 ## Example
 
 ```typescript
+import OAuth2Device from "homey-oauth2app";
 import HomeyIntervalManager from "homey-interval-manager";
 
-class MyDevice extends Homey.Device {
+class SomeCloudApiDevice extends OAuth2Device {
     private intervalManager: HomeyIntervalManager;
 
-    constructor(props: any) {
-        super(props);
-
+    async onOAuth2Init() {
         this.intervalManager = new HomeyIntervalManager(this, {
-            fetchData: {
-                functionName: "fetchDataFromApi",
-                settingName: "updateInterval",
-            },
-        });
-    }
-
-    public async onInit() {
+            STATUS_UPDATE: {
+                functionName: "syncStatusUpdate",
+                settingName: "status_update_polling_interval",
+            }
+        }, 600, true);
         await this.intervalManager.start();
     }
 
-    public async onSettings({ changedKeys }: any) {
-        await this.intervalManager.restart(...changedKeys);
+    async syncStatusUpdate() {
+        // fetch api data and set capability
     }
 
-    private async fetchDataFromApi() {
-        // ... your logic to fetch data from an API ...
-        this.log("Data fetched!");
+    async onOAuth2Uninit() {
+        await this.intervalManager.stop();
+    }
+
+    async onSettings({
+                         oldSettings,
+                         newSettings,
+                         changedKeys,
+                     }) {
+        // perform your other tasks
+        this.homey.setTimeout(async () => {
+            await this.intervalManager.restart(...changedKeys);
+        }, 1000);
     }
 }
 ```
