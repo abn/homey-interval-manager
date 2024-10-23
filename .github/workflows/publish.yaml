@@ -2,15 +2,22 @@ name: Publish Package to npmjs
 on:
   workflow_dispatch:
     inputs:
-      additionalArgs:
-        description: 'Additional arguments to pass into npm publish command'
-        required: false
-        default: ''
+      isDryRun:
+        description: "Is this a dry run?"
+        type: choice
+        required: true
+        default: 'true'
+        options:
+          - true
+          - false
 
 jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+
+    # only allow running this workflow from main
+    if: "${{ github.ref == 'refs/heads/main' && github.event.inputs.isDryRun == 'false' }}"
 
     steps:
       - name: Checkout source
@@ -39,11 +46,14 @@ jobs:
           generateReleaseNotes: true
           makeLatest: true
 
-  build:
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+
+    # only allow running this workflow from main
+    if: ${{ github.ref == 'refs/heads/main' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +63,14 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish package
+      - name: Publish package (dry-run)
+        if: ${{ github.event.inputs.isDryRun == 'true' }}
         run: npm publish --provenance --access public ${{ github.event.inputs.additionalArgs }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish package
+        if: ${{ github.event.inputs.isDryRun == 'false' }}
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
