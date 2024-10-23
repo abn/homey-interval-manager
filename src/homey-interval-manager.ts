@@ -58,6 +58,13 @@ export class HomeyIntervalManager<T extends Device> {
         this.intervalConfigs = intervalConfigs;
         this.defaultIntervalSeconds = Math.floor(defaultIntervalSeconds);
         this.debug = debug;
+
+        if (this.debug) {
+            this.device.log(
+                `Configured interval manager for ${this.device.constructor.name} with default delay of`,
+                `${this.defaultIntervalSeconds} configuration ${JSON.stringify(this.intervalConfigs, null, 2)}`,
+            );
+        }
     }
 
     /**
