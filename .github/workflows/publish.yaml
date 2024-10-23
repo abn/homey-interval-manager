@@ -1,4 +1,4 @@
-name: Publish Package to npmjs
+name: Release Package
 on:
   push:
     tags:
@@ -16,6 +16,9 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout source
