@@ -35,7 +35,8 @@
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "pnpm run format && pnpm run lint",
+    "quality:check": "pnpm run format:check && pnpm run lint",
+    "quality:fix": "pnpm run format && pnpm run lint:check",
     "test": "jest",
     "docs": "npx typedoc"
   },
