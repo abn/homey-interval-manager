@@ -4,14 +4,6 @@ on:
     tags:
       - v*
 
-  workflow_dispatch:
-    inputs:
-      isDryRun:
-        description: "Is this a dry run?"
-        type: boolean
-        required: true
-        default: true
-
 jobs:
   release:
     name: Create GitHub Release
@@ -33,14 +25,12 @@ jobs:
           echo "version=$(cat package.json  | jq -r .version)" >> $GITHUB_OUTPUT
 
       - name: Ensure tag matches package versions
-        if: ${{ github.event_name == 'push' }}
         shell: bash
         run: |
           test "${{ github.ref_name }}" == "v${{ steps.get-package-version.outputs.version }}"
 
       - name: Create Release
         uses: ncipollo/release-action@v1
-        if: ${{ github.event_name == 'push' }}
         with:
           tag: "${{ github.ref_name }}"
           generateReleaseNotes: true
@@ -54,9 +44,6 @@ jobs:
       contents: read
       id-token: write
 
-    # only allow running this workflow from main
-    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -65,14 +52,7 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish package (dry-run)
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.isDryRun }}
-        run: npm publish --provenance --access public --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish package
-        if: ${{ github.event_name == 'push' || github.event.inputs.isDryRun == 'false' }}
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
