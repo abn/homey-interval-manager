@@ -1,7 +1,7 @@
 # homey-interval-manager
 
-A lightweight TypeScript library for managing intervals in Homey devices. Simplifies the process of scheduling and
-managing recurring tasks within your Homey devices.
+A lightweight TypeScript library for managing intervals in Homey Apps, Devices and Drivers. Simplifies the process of
+scheduling and managing recurring tasks within your Homey applications.
 
 ## Features
 
@@ -32,15 +32,22 @@ import HomeyIntervalManager from "homey-interval-manager";
 
 ```typescript
 // In your device class constructor:
-this.intervalManager = new HomeyIntervalManager(this, {
-    SOME_KEY: {
-        functionName: "myFunction", // Name of the function to execute
-        settingName: "mySetting", // Optional setting to watch for changes
-        intervalSeconds: 300, // Optional interval in seconds (default: 600)
-        disableAutoStart: false, // Optional, prevent auto-start on device init
+this.intervalManager = new HomeyIntervalManager(
+    this,
+    {
+        SOME_KEY: {
+            functionName: "myFunction", // Name of the function to execute
+            settingName: "mySetting", // Optional setting to watch for changes
+            intervalSeconds: 300, // Optional interval in seconds (default: 600)
+            disableAutoStart: false, // Optional, prevent auto-start on device init
+        },
+        SOME_OTHER_KEY: {
+            functionName: "myOtherFunction", // Name of the function to execute
+        },
+        // ... more interval configurations ...
     },
-    // ... more interval configurations ...
-});
+    600,
+); // defaults to 10 minutes if no interval or setting name provided
 ```
 
 3. **Start the intervals:**
@@ -76,7 +83,7 @@ await this.intervalManager.clearInterval("myInterval");
 await this.intervalManager.restart();
 
 // Restart intervals associated with specific settings
-await this.intervalManager.restart("mySetting", "anotherSetting");
+await this.intervalManager.restart("mySetting");
 ```
 
 ## Example
@@ -103,15 +110,16 @@ class SomeCloudApiDevice extends OAuth2Device {
         await this.intervalManager.start();
     }
 
-    async syncStatusUpdate() {
-        // fetch api data and set capability
+    async syncStatusUpdate(): Promise<void> {
+        const status = await this.get({path: "/status"});
+        await this.setCapabilityValue("device_status", status.name);
     }
 
     async onOAuth2Uninit() {
         await this.intervalManager.stop();
     }
 
-    async onSettings({ oldSettings, newSettings, changedKeys }) {
+    async onSettings({oldSettings, newSettings, changedKeys}) {
         // perform your other tasks
         this.homey.setTimeout(async () => {
             await this.intervalManager.restart(...changedKeys);

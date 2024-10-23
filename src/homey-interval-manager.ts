@@ -1,10 +1,12 @@
-import type { Device } from "homey";
+import type { App, Device, Driver } from "homey";
 
 /**
  * Represents the configuration for an interval-based operation on a device.
  *
- * @template T - Extends from the [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html) type defining
- *  {@link IntervalConfiguration.functionName} if specified.
+ * @template T - Extends from one of [Homey App](https://apps-sdk-v3.developer.homey.app/App.html),
+ *  [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html) or
+ *  [Homey Driver](https://apps-sdk-v3.developer.homey.app/Driver.html) types implementing
+ *  {@link IntervalConfiguration.functionName}.
  * @property {keyof T & string} functionName - The name of the function to be executed on the device, must be defined by
  *  the device instance.
  * @property {string} [settingName] - An optional setting name associated with the interval operation. If specified and
@@ -14,23 +16,23 @@ import type { Device } from "homey";
  *  of {@link IntervalConfiguration.functionName|T.functionName()}. This takes precedence
  * @property {boolean} [disableAutoStart] - An optional flag to disable the automatic start of the interval.
  */
-export interface IntervalConfiguration<T extends Device> {
+export interface IntervalConfiguration<T extends App | Device | Driver> {
     functionName: keyof T & string;
-    settingName?: string;
+    settingName?: T extends Device ? string : undefined;
     intervalSeconds?: number;
     disableAutoStart?: boolean;
 }
-
-type ValueOf<T> = T[keyof T];
 
 /**
  * Type definition for a collection of interval configurations, mapped by unique string keys.
  * Each entry in the collection is an {@link IntervalConfiguration} associated with a specific device type.
  *
- * @template T - Extends from the [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html) type, representing
- *  the device-specific configuration.
+ * @template T - Extends from the [Homey App](https://apps-sdk-v3.developer.homey.app/App.html),
+ *  [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html) or
+ *  [Homey Driver](https://apps-sdk-v3.developer.homey.app/Driver.html) type, representing the instance specific
+ *  configuration.
  */
-export type IntervalConfigurationCollection<T extends Device> = Record<string, IntervalConfiguration<T>>;
+export type IntervalConfigurationCollection<T extends App | Device | Driver> = Record<string, IntervalConfiguration<T>>;
 
 type DeviceSettingsValue = string | number | boolean | undefined;
 type DeviceSettings = Record<string, DeviceSettingsValue>;
@@ -41,11 +43,13 @@ type DeviceSettings = Record<string, DeviceSettingsValue>;
  * [OAuth2Device](https://athombv.github.io/node-homey-oauth2app/OAuth2Device.html) that polls multiple API endpoints in
  * the background.
  *
- * @template T - Extends from [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html).
+ * @template T - Extends from [Homey App](https://apps-sdk-v3.developer.homey.app/App.html),
+ *  [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html) or
+ *  [Homey Driver](https://apps-sdk-v3.developer.homey.app/Driver.html).
  */
-export class HomeyIntervalManager<T extends Device> {
+export class HomeyIntervalManager<T extends App | Device | Driver> {
     private managedIntervalIds: Record<string, NodeJS.Timeout | null> = {};
-    private readonly device: T;
+    private readonly parent: T;
     private readonly intervalConfigs: IntervalConfigurationCollection<T>;
     private readonly debug: boolean;
     public readonly defaultIntervalSeconds: number;
@@ -56,17 +60,29 @@ export class HomeyIntervalManager<T extends Device> {
         defaultIntervalSeconds = 600,
         debug: boolean = false,
     ) {
-        this.device = device;
+        this.parent = device;
         this.intervalConfigs = intervalConfigs;
         this.defaultIntervalSeconds = Math.floor(defaultIntervalSeconds);
         this.debug = debug;
 
         if (this.debug) {
-            this.device.log(
-                `Configured interval manager for ${this.device.constructor.name} with default delay of`,
+            this.parent.log(
+                `Configured interval manager for ${this.parent.constructor.name} with default delay of`,
                 `${this.defaultIntervalSeconds} configuration ${JSON.stringify(this.intervalConfigs, null, 2)}`,
             );
         }
+    }
+
+    /**
+     * Checks if the given object is a [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html) by checking
+     * for the existence of the [Device.getSettings()](https://apps-sdk-v3.developer.homey.app/Device.html#getSettings)
+     * function.
+     *
+     * @param {any} obj - The object to check.
+     * @return {obj is Device} - True if the object is a Device, otherwise false.
+     */
+    private isDevice(obj: T): obj is T & Device {
+        return "getSettings" in obj && typeof obj.getSettings === "function";
     }
 
     /**
@@ -108,15 +124,15 @@ export class HomeyIntervalManager<T extends Device> {
         const intervalId = this.managedIntervalIds[key];
 
         if (!intervalId) {
-            if (this.debug) this.device.log(`Requested interval (${key}) not active, skipping`);
+            if (this.debug) this.parent.log(`Requested interval (${key}) not active, skipping`);
             return;
         }
 
         try {
-            if (this.debug) this.device.log(`Stopping interval ${key}`);
-            this.device.homey.clearInterval(intervalId);
+            if (this.debug) this.parent.log(`Stopping interval ${key}`);
+            this.parent.homey.clearInterval(intervalId);
         } catch (error) {
-            this.device.error(`Error stopping interval ${key}:`, error);
+            this.parent.error(`Error stopping interval ${key}:`, error);
         }
 
         this.managedIntervalIds[key] = null;
@@ -164,7 +180,7 @@ export class HomeyIntervalManager<T extends Device> {
      * @return {Promise<void>} A promise that resolves when the intervals have been started.
      */
     public async start(...keys: string[]): Promise<void> {
-        const settings = this.device.getSettings();
+        const settings = this.isDevice(this.parent) ? this.parent.getSettings() : {};
 
         const isAutoStart = keys.length === 0;
         const restartKeys = isAutoStart ? Object.keys(this.intervalConfigs) : keys;
@@ -178,24 +194,24 @@ export class HomeyIntervalManager<T extends Device> {
 
             const intervalMs = this.getIntervalMilliseconds(config, settings);
 
-            const intervalFn = this.device[config.functionName] as unknown as () => Promise<void>;
+            const intervalFn = this.parent[config.functionName] as unknown as () => Promise<void>;
 
             if (typeof intervalFn !== "function") {
                 if (this.debug)
-                    this.device.log(
+                    this.parent.log(
                         `Defined interval function (${config.functionName}) for ${key} is not a function, skipping`,
                     );
                 continue;
             }
 
             if (this.debug)
-                this.device.log(`Starting ${key} (${config.functionName}) with an interval of ${intervalMs} ms`);
+                this.parent.log(`Starting ${key} (${config.functionName}) with an interval of ${intervalMs} ms`);
 
-            await intervalFn.apply(this.device).catch(this.device.error);
+            await intervalFn.apply(this.parent).catch(this.parent.error);
 
-            this.managedIntervalIds[key] = this.device.homey.setInterval(async (): Promise<void> => {
-                if (this.debug) this.device.log(`Executing scheduled run ${key} (${config.functionName})`);
-                await intervalFn.apply(this.device).catch(this.device.error);
+            this.managedIntervalIds[key] = this.parent.homey.setInterval(async (): Promise<void> => {
+                if (this.debug) this.parent.log(`Executing scheduled run ${key} (${config.functionName})`);
+                await intervalFn.apply(this.parent).catch(this.parent.error);
             }, intervalMs);
         }
     }
@@ -212,15 +228,19 @@ export class HomeyIntervalManager<T extends Device> {
     }
 
     /**
-     * Restarts intervals based on a specific configuration key and its values.
+     * Restarts intervals based on the specified configuration key and its corresponding values.
      *
-     * @param {keyof IntervalConfiguration<T>} configKey - The configuration key to match.
-     * @param {...ValueOf<IntervalConfiguration<T>>[]} values - The values to match against the configuration key.
-     * @return {Promise<void>} A promise that resolves when the intervals have been restarted.
+     * @template T Extends from one of [Homey App](https://apps-sdk-v3.developer.homey.app/App.html),
+     *  [Homey Device](https://apps-sdk-v3.developer.homey.app/Device.html) or
+     *  [Homey Driver](https://apps-sdk-v3.developer.homey.app/Driver.html).
+     * @template K Valid property name of {@link IntervalConfiguration}.
+     * @param {K} configKey - The key within the interval configuration to check for restarts.
+     * @param {...IntervalConfiguration<T>[K][]} values - The values to match against the specified configuration key.
+     * @return {Promise<void>} - A promise that resolves once the restart process is complete.
      */
-    private async restartByConfigKey(
-        configKey: keyof IntervalConfiguration<T>,
-        ...values: ValueOf<IntervalConfiguration<T>>[]
+    private async restartByConfigKey<K extends keyof IntervalConfiguration<T>>(
+        configKey: K,
+        ...values: IntervalConfiguration<T>[K][]
     ): Promise<void> {
         const { intervalConfigs } = this;
         const restartKeys: string[] = [];
@@ -255,7 +275,9 @@ export class HomeyIntervalManager<T extends Device> {
      * @param {...string} settingNames - The names of the settings to restart the system by.
      * @return {Promise<void>} - A promise that resolves when the restart operation is complete.
      */
-    public async restartBySettings(...settingNames: string[]): Promise<void> {
+    public async restartBySettings(
+        ...settingNames: IntervalConfiguration<T>["settingName"][] & string[]
+    ): Promise<void> {
         await this.restartByConfigKey("settingName", ...settingNames);
     }
 
@@ -265,7 +287,7 @@ export class HomeyIntervalManager<T extends Device> {
      * @param {string[]} functionNames - The names of the functions to restart intervals for.
      * @return {Promise<void>} A promise that resolves when the restart process is complete.
      */
-    public async restartByFunctionName(...functionNames: string[]): Promise<void> {
+    public async restartByFunctionName(...functionNames: IntervalConfiguration<T>["functionName"][]): Promise<void> {
         await this.restartByConfigKey("functionName", ...functionNames);
     }
 }
