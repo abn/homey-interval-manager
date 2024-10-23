@@ -111,7 +111,7 @@ class SomeCloudApiDevice extends OAuth2Device {
     }
 
     async syncStatusUpdate(): Promise<void> {
-        const status = await this.get({path: "/status"});
+        const status = await this.get({ path: "/status" });
         await this.setCapabilityValue("device_status", status.name);
     }
 
@@ -119,7 +119,7 @@ class SomeCloudApiDevice extends OAuth2Device {
         await this.intervalManager.stop();
     }
 
-    async onSettings({oldSettings, newSettings, changedKeys}) {
+    async onSettings({ oldSettings, newSettings, changedKeys }) {
         // perform your other tasks
         this.homey.setTimeout(async () => {
             await this.intervalManager.restart(...changedKeys);
