@@ -34,7 +34,7 @@ export interface IntervalConfiguration<T extends App | Device | Driver> {
  */
 export type IntervalConfigurationCollection<T extends App | Device | Driver> = Record<string, IntervalConfiguration<T>>;
 
-type DeviceSettingsValue = string | number | boolean | undefined;
+type DeviceSettingsValue = boolean | string | number | undefined | null;
 type DeviceSettings = Record<string, DeviceSettingsValue>;
 
 /**
