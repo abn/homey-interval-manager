@@ -92,6 +92,9 @@ await this.intervalManager.restart("mySetting");
 import { OAuth2Device } from "homey-oauth2app";
 import { HomeyIntervalManager, IntervalConfiguration, IntervalConfigurationCollection } from "homey-interval-manager";
 
+type DeviceSettingsValue = boolean | string | number | undefined | null;
+type DeviceSettings = Record<string, DeviceSettingsValue>;
+
 class SomeCloudApiDevice extends OAuth2Device {
     protected intervalManager!: HomeyIntervalManager<this>;
 
