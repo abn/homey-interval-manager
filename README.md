@@ -89,11 +89,11 @@ await this.intervalManager.restart("mySetting");
 ## Example
 
 ```typescript
-import OAuth2Device from "homey-oauth2app";
-import HomeyIntervalManager from "homey-interval-manager";
+import { OAuth2Device } from "homey-oauth2app";
+import { HomeyIntervalManager, IntervalConfiguration, IntervalConfigurationCollection } from "homey-interval-manager";
 
 class SomeCloudApiDevice extends OAuth2Device {
-    private intervalManager: HomeyIntervalManager;
+    protected intervalManager!: HomeyIntervalManager<this>;
 
     async onOAuth2Init() {
         this.intervalManager = new HomeyIntervalManager(
@@ -119,10 +119,15 @@ class SomeCloudApiDevice extends OAuth2Device {
         await this.intervalManager.stop();
     }
 
-    async onSettings({ oldSettings, newSettings, changedKeys }) {
-        // perform your other tasks
+    async onSettings(event: {
+        oldSettings: DeviceSettings;
+        newSettings: DeviceSettings;
+        changedKeys: string[];
+    }): Promise<string | void> {
+        this.log("SomeCloudApi device settings where changed");
+        const changedKeys = event.changedKeys as IntervalConfiguration<this>["settingName"][] & string[];
         this.homey.setTimeout(async () => {
-            await this.intervalManager.restart(...changedKeys);
+            await this.intervalManager.restartBySettings(...changedKeys);
         }, 1000);
     }
 }
