@@ -6,6 +6,8 @@ on:
     paths:
       - src/**
       - package.json
+      - README.md
+      - .github/workflows/docs.yaml
   workflow_dispatch:
 
 permissions:
