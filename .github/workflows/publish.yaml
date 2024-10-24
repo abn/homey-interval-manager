@@ -50,7 +50,7 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup
 
-      - name: Generate documentation
+      - name: Build distribution
         shell: bash
         run: pnpm build
 

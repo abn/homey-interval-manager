@@ -101,3 +101,34 @@ jobs:
       - name: Build distribution
         shell: bash
         run: pnpm test
+
+  publish-check:
+    name: Check publishing
+    needs:
+      - build-checks
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup
+
+      - name: Build distribution
+        shell: bash
+        run: pnpm build
+
+      - name: Show git diff
+        shell: bash
+        run: |
+          git status
+          git diff
+
+      - name: Publish package
+        run: pnpm publish --access public --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
