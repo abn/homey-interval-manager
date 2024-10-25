@@ -121,12 +121,6 @@ jobs:
         shell: bash
         run: pnpm build
 
-      - name: Show git diff
-        shell: bash
-        run: |
-          git status
-          git diff
-
       - name: Publish package
         run: pnpm publish --access public --dry-run
         env:
