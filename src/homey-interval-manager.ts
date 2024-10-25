@@ -17,8 +17,8 @@ import type { App, Device, Driver } from "homey";
  * @property {boolean} [disableAutoStart] - An optional flag to disable the automatic start of the interval.
  */
 export interface IntervalConfiguration<T extends App | Device | Driver> {
-    functionName: keyof T & string;
-    settingName?: T extends Device ? string : undefined;
+    functionName: keyof T & string; // functionName must be defined in the implementation
+    settingName?: T extends Device ? string : undefined; // this is only supported for Device instances
     intervalSeconds?: number;
     disableAutoStart?: boolean;
 }
