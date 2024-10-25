@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Get package version
         id: get-package-version
