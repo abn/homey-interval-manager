@@ -4,14 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    versioning-strategy: widen
+    versioning-strategy: auto
     groups:
       development-dependencies:
         dependency-type: "development"
-        versioning-strategy: widen
       production-dependencies:
         dependency-type: "production"
-        versioning-strategy: increase-if-necessary
         update-types:
           - "minor"
           - "patch"
