@@ -1,14 +1,16 @@
 name: Main Workflow
 
 on:
+  create:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
   merge_group:
 
 jobs:
-  lint-checks:
-    name: Lint Check
+  quality-checks:
+    name: Quality Check
 
     runs-on: ubuntu-latest
     steps:
@@ -31,9 +33,14 @@ jobs:
   build-checks:
     name: Build Check
     needs:
-      - lint-checks
-
+      - quality-checks
     runs-on: ubuntu-latest
+
+    outputs:
+      package-name: ${{ steps.get-package-info.outputs.name }}
+      package-version: ${{ steps.get-package-info.outputs.version }}
+      package-dist: ${{ steps.get-package-info.outputs.dist }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,17 +58,27 @@ jobs:
         shell: bash
         run: pnpm pack
 
+      - name: Get package info
+        id: get-package-info
+        shell: bash
+        run: |
+          package_name=$(cat package.json  | jq -r .name)
+          package_version=$(cat package.json  | jq -r .version)
+          echo "name=${package_name}" >> $GITHUB_OUTPUT
+          echo "version=${package_version}" >> $GITHUB_OUTPUT
+          echo "dist=${package_name}-${package_version}.tgz" >> $GITHUB_OUTPUT
+
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
           name: dist-tarball
           path: |
-            homey-interval-manager-*.tgz
+            ${{ steps.get-package-info.outputs.dist }}
 
   docs-check:
-    name: Doc Generation Check
+    name: Documentation Check
     needs:
-      - lint-checks
+      - quality-checks
 
     runs-on: ubuntu-latest
     steps:
@@ -86,7 +103,7 @@ jobs:
   tests:
     name: Run Tests
     needs:
-      - lint-checks
+      - quality-checks
       - build-checks
     runs-on: ubuntu-latest
     steps:
@@ -102,27 +119,57 @@ jobs:
         shell: bash
         run: pnpm test
 
-  publish-check:
-    name: Check publishing
+  publish-checks:
+    name: Publish Check
     needs:
       - build-checks
 
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Download distribution build
+        uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup build environment
-        uses: ./.github/actions/setup
-
-      - name: Build distribution
-        shell: bash
-        run: pnpm build
+          name: dist-tarball
 
       - name: Publish package
-        run: pnpm publish --access public --dry-run
+        run: |
+          npm publish --access public --dry-run ${{ needs.build-checks.outputs.package-dist }}
+        env:
+          NPM_CONFIG_PROVENANCE: true
+
+  publish:
+    name: Publish Package
+    if: "${{ github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v') }}"
+    needs:
+      - build-checks
+      - tests
+      - publish-checks
+    permissions:
+      contents: write
+      id-token: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure tag matches package versions
+        shell: bash
+        run: |
+          test "${{ github.ref_name }}" == "v${{ needs.build-checks.outputs.package-version }}"
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "${{ github.ref_name }}"
+          generateReleaseNotes: true
+          makeLatest: true
+
+      - name: Download distribution build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-tarball
+
+      - name: Publish package
+        run: |
+          npm publish --access public ${{ needs.build-checks.outputs.package-dist }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true

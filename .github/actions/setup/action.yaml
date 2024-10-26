@@ -11,6 +11,9 @@ inputs:
   working-directory:
     description: "Working directory to setup environment in."
     default: "${{ github.workspace }}"
+  pnpm-install:
+    description: "Perform pnpm install after setup."
+    default: "true"
 
 runs:
   using: composite
@@ -41,6 +44,7 @@ runs:
           ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies
+      if: "${{ inputs.pnpm-install == 'true' }}"
       working-directory: ${{inputs.working-directory}}
       shell: bash
       run: pnpm install
