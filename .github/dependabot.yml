@@ -3,8 +3,26 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "monthly"
-    versioning-strategy: increase
+      interval: "weekly"
+    versioning-strategy: widen
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: increase-if-necessary
+    groups:
+      development-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
