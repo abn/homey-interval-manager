@@ -36,7 +36,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "quality:check": "pnpm run format:check && pnpm run lint",
-    "quality:fix": "pnpm run format && pnpm run lint:check",
+    "quality:fix": "pnpm run format && pnpm run lint",
     "test": "jest",
     "docs": "npx typedoc"
   },
