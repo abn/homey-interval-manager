@@ -5,10 +5,10 @@ scheduling and managing recurring tasks within your Homey applications.
 
 ## Features
 
--   **Easy interval management:** Start, stop, and restart intervals with a simple API.
--   **Flexible configuration:** Define intervals with custom functions, settings, and intervals.
--   **Automatic restarts:** Optionally restart intervals when device settings change.
--   **TypeScript support:** Provides type definitions for improved code clarity and maintainability.
+- **Easy interval management:** Start, stop, and restart intervals with a simple API.
+- **Flexible configuration:** Define intervals with custom functions, settings, and intervals.
+- **Automatic restarts:** Optionally restart intervals when device settings change.
+- **TypeScript support:** Provides type definitions for improved code clarity and maintainability.
 
 ## Installation
 
