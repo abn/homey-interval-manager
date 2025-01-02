@@ -36,6 +36,9 @@ describe("HomeyIntervalManager", () => {
         device.mockFunction1.mockReturnValue(Promise.resolve());
         device.mockFunction2.mockReturnValue(Promise.resolve());
         device.mockFunction3.mockReturnValue(Promise.resolve());
+
+        device.getSettings.mockReturnValue({});
+        device.getAvailable.mockReturnValue(true);
     });
 
     afterEach(() => {
@@ -319,6 +322,32 @@ describe("HomeyIntervalManager", () => {
         expect(device.homey.clearInterval).toHaveBeenCalledTimes(1);
         expect(device.homey.setInterval).toHaveBeenCalledTimes(3);
         expect(device.homey.setInterval).toHaveBeenNthCalledWith(3, expect.any(Function), 20 * 1000);
+
+        await intervalManager.stop();
+    });
+
+    it("should skip the run when device is not available and availability is not ignored", async () => {
+        const configs: IntervalConfigurationCollection<MockedDevice> = {
+            interval1: { functionName: "mockFunction1" },
+            interval2: { functionName: "mockFunction2", ignoreAvailability: true },
+        };
+        const intervalManager = new HomeyIntervalManager<MockedDevice>(device, configs, defaultIntervalSeconds);
+
+        device.getAvailable.mockReturnValue(false);
+
+        await intervalManager.start();
+        expect(device.mockFunction1).toHaveBeenCalledTimes(1);
+        expect(device.mockFunction2).toHaveBeenCalledTimes(1);
+
+        jest.advanceTimersByTime(defaultIntervalSeconds * 1000);
+        expect(device.mockFunction1).toHaveBeenCalledTimes(1);
+        expect(device.mockFunction2).toHaveBeenCalledTimes(2);
+
+        device.getAvailable.mockReturnValue(true);
+
+        jest.advanceTimersByTime(defaultIntervalSeconds * 1000);
+        expect(device.mockFunction1).toHaveBeenCalledTimes(2);
+        expect(device.mockFunction2).toHaveBeenCalledTimes(3);
 
         await intervalManager.stop();
     });

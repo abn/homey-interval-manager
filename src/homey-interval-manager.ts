@@ -15,12 +15,14 @@ import type { App, Device, Driver } from "homey";
  * @property {number} [intervalSeconds] - An optional interval time in seconds for configuring delay between executions
  *  of {@link IntervalConfiguration.functionName|T.functionName()}. This takes precedence
  * @property {boolean} [disableAutoStart] - An optional flag to disable the automatic start of the interval.
+ * @property {boolean} [ignoreAvailability] - An optional flag to ignore availability if supported (eg: Device).
  */
 export interface IntervalConfiguration<T extends App | Device | Driver> {
     functionName: keyof T & string; // functionName must be defined in the implementation
     settingName?: T extends Device ? string : undefined; // this is only supported for Device instances
     intervalSeconds?: number;
     disableAutoStart?: boolean;
+    ignoreAvailability?: boolean;
 }
 
 /**
@@ -210,6 +212,13 @@ export class HomeyIntervalManager<T extends App | Device | Driver> {
             await intervalFn.apply(this.parent).catch(this.parent.error);
 
             this.managedIntervalIds[key] = this.parent.homey.setInterval(async (): Promise<void> => {
+                const ignoreAvailability = config?.ignoreAvailability ?? false;
+
+                if (!ignoreAvailability && this.isDevice(this.parent) && !this.parent.getAvailable()) {
+                    this.parent.log(`Device is unavailable, skipping run ${key} (${config.functionName})`);
+                    return;
+                }
+
                 if (this.debug) this.parent.log(`Executing scheduled run ${key} (${config.functionName})`);
                 await intervalFn.apply(this.parent).catch(this.parent.error);
             }, intervalMs);
